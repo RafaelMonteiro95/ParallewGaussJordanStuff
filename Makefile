@@ -1,5 +1,7 @@
+# C and C++ makefile
 # Project name
-NAME:=gauss_jordan
+NAME:=mpi-exercise2
+
 
 # Directories
 INCDIR:=include
@@ -177,4 +179,3 @@ create: checkname
 	cp ./Makefile $(NAME)/
 	@echo Generating README...
 	$(MAKE) readme
-
