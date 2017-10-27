@@ -21,18 +21,9 @@ void kill(int mpi_error){
 	exit(1);
 }
 
-void printvec(int *v, int n){
-	
-	int i;
-	
-	printf("v = {");
-	for(i = 0; i < n; i++)
-		printf("%d, ", v[i]);
-	printf("\b\b}\n");
-}
-
 void usage(){
-	
+
+	printf("Usage: ./")	
 }
 
 int main(int argc, char *argv[]){
