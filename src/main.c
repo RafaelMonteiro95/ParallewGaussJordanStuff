@@ -3,6 +3,10 @@
 	Giovanna Oliveira Guimarães 9293692
 	Rafael Augusto Monteiro		9293095
 	Choyoung Francisco Lim 		6436060
+
+	NOTE:
+	Modelo do código: https://docs.google.com/document/d/129-iAEgjICFppIovFr41jjV9S2ORI6DCErZhCD0yePE/edit?usp=sharing
+	Implementar seguindo o passo a passo modelado
 */
 
 #include <stdio.h>
@@ -23,7 +27,7 @@ void kill(int mpi_error){
 
 void usage(){
 
-	printf("Usage: ./")	
+	printf("Usage: ./matrix-reduction [nrows] [ncols]")	
 }
 
 int main(int argc, char *argv[]){
@@ -41,6 +45,7 @@ int main(int argc, char *argv[]){
 		return 0;
 	}
 
+	// Get nrows and ncols from command line
 	matrix = CreateMatrix(atoi(argv[1]), atoi(argv[2]));
 
 	/* Initialization */
@@ -48,17 +53,49 @@ int main(int argc, char *argv[]){
 	MPI_Comm_size(MPI_COMM_WORLD, &nproc);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 
+	/* Read matrix */
 	if(rank == 0){
-		i = 0;
-
-		/* Get input */
 
 	}
 
+	// For each column
+	for(i = 0; i < matrix->cols; i++){
+		
+		/* Master only */
+		if(rank == 0){
 
-	if(rank == 0){
-		printf("Found number %d %d times\n", number, result);
-		free(vector);
+			/* Find pivot - Use OpenMP here */
+
+			/* Position pivot */
+
+			/* Reduce pivot line (divide line by pivot) - Use OpenMP here */
+
+			/* Send pivot and their line (indexed by rank) to each slaves */
+			// NOTE: dá pra usar aqueles tipos de dados q o psergio usou no
+			// exemplo da multiplicação de matriz (vetor) pra separar cada linha
+			// da matriz e mandar tudo de uma vez
+
+		}
+
+		/* Sum each line (indexed by rank) with the pivot line multiplied by a 
+		scalar. The scalar shall be the oposite of the element in the same 
+		column as the pivot	of that line, i.e, if the pivot line is [0, 1, 2, 3] 
+		and the  line [0, 2, 3, 4] should be solved by multiplying the pivot 
+		line by -2 and then adding these two lines: 
+			 [0, 1, 2, 3]*(-2)
+			+[0, 2, 3, 4]
+			---------------
+			 [0, 0, -1, -2]
+
+			Use OpenMP here.
+		*/
+
+		/* Send result back to master */
+
+		/* Master can debug print */
+		if(rank == 0){
+
+		}
 	}
 
 	MPI_Finalize();

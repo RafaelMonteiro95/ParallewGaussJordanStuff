@@ -1,6 +1,6 @@
 # C and C++ makefile
 # Project name
-NAME:=mpi-exercise2
+NAME:=matrix-reduction
 
 
 # Directories
