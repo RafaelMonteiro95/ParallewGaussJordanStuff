@@ -79,6 +79,10 @@ int main(int argc, char *argv[]){
 			// exemplo da multiplicação de matriz (vetor) pra separar cada linha
 			// da matriz e mandar tudo de uma vez
 
+		// Slaves
+		} else {
+			/* Receive message (pivot and rank lines) */
+
 		}
 
 		/* Sum each line (indexed by rank) with the pivot line multiplied by a 
