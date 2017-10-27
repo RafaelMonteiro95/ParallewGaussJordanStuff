@@ -35,6 +35,7 @@ int main(int argc, char *argv[]){
 	int nproc, rank;
 	Matrix *matrix = NULL;
 	
+	int i;
 	int *recv = NULL;
 
 	int *sendVec;
