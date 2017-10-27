@@ -25,9 +25,9 @@ void kill(int mpi_error){
 	exit(1);
 }
 
-void usage(){
+void usage(const char *progName){
 
-	printf("Usage: ./matrix-reduction [nrows] [ncols]")	
+	printf("Usage: %s [nrows] [ncols]", progName);
 }
 
 int main(int argc, char *argv[]){
@@ -41,7 +41,7 @@ int main(int argc, char *argv[]){
 	int *displacement;
 
 	if(argc != 3){
-		usage();
+		usage(argv[1]);
 		return 0;
 	}
 
