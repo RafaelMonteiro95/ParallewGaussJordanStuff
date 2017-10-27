@@ -66,10 +66,13 @@ int main(int argc, char *argv[]){
 		if(rank == 0){
 
 			/* Find pivot - Use OpenMP here */
+			// FindPivot(matrix);
 
 			/* Position pivot */
+			// SwapLines(matrix, line1, line2);
 
 			/* Reduce pivot line (divide line by pivot) - Use OpenMP here */
+			// MultiplyLineByScalar(matrix, line, value);
 
 			/* Send pivot and their line (indexed by rank) to each slaves */
 			// NOTE: dá pra usar aqueles tipos de dados q o psergio usou no
@@ -90,6 +93,8 @@ int main(int argc, char *argv[]){
 
 			Use OpenMP here.
 		*/
+		// MultiplyLineByScalar(matrix, line, value);
+		// AddLines(matrix, line1, line2);
 
 		/* Send result back to master */
 
