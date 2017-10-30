@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "matrix.h"
 
@@ -85,11 +86,12 @@ void AddLines(Matrix *matrix, int line1, int line2){
 int *ToArray(Matrix *matrix, int *length){
 
 	int _length = matrix->rows*matrix->cols;
-	int array = (int *) malloc(sizeof(int)*_length);
+	int *array = (int *) malloc(sizeof(int)*_length);
 
-	for(int i = 0; i < matrix->rows; i++)
-		memcpy(&array[i], matrix->values[i], sizeof(int)*matrix->cols);
+	for(int i = 0; i < matrix->rows; i++){
+		memcpy(&array[i*matrix->cols], matrix->values[i], sizeof(int)*matrix->cols);
+	}
 
-	if(length !- NULL) length = _length;
+	if(length != NULL) *length = _length;
 	return array;
 }

@@ -67,14 +67,12 @@ int main(int argc, char *argv[]){
 	}
 	
 	/* TEST */
-	int line = FindPivot(matrix, 0);
-	printf("pivot line: %d\n", line);
-	line = FindPivot(matrix, 1);
-	printf("pivot line: %d\n", line);
-	line = FindPivot(matrix, 2);
-	printf("pivot line: %d\n", line);
-	line = FindPivot(matrix, 3);
-	printf("pivot line: %d\n", line);
+	int *array = ToArray(matrix, NULL);
+	printf("Array[%d] = {", matrix->rows*matrix->cols);
+	for(i = 0; i < matrix->rows*matrix->cols; i++){
+		printf("%d, ", array[i]);
+	} printf("\b\b}\n");
+	free(array);
 	/* END TEST*/
 
 	// For each column
