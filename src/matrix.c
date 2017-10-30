@@ -81,3 +81,15 @@ void AddLines(Matrix *matrix, int line1, int line2){
 	for(int i = 0; i < matrix->cols; i++)
 		matrix->values[line1][i] += matrix->values[line2][i];
 }
+
+int *ToArray(Matrix *matrix, int *length){
+
+	int _length = matrix->rows*matrix->cols;
+	int array = (int *) malloc(sizeof(int)*_length);
+
+	for(int i = 0; i < matrix->rows; i++)
+		memcpy(&array[i], matrix->values[i], sizeof(int)*matrix->cols);
+
+	if(length !- NULL) length = _length;
+	return array;
+}

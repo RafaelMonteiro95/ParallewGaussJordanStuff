@@ -22,4 +22,7 @@ void AddLines(Matrix *matrix, int destLine, int line2);
 // This function overwrite the matrix's destLine with the new values.
 void MultiplyLineByScalar(Matrix *matrix, int line, float value);
 
+// The user must free the returned buffer
+int *ToArray(Matrix *matrix, int *length);
+
 #endif
