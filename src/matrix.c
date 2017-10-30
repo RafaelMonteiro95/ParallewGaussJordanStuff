@@ -12,14 +12,14 @@ Matrix *CreateMatrix(int r, int c){
 	
 	if(!m) return NULL;
 
-	m->values = (int **) malloc(sizeof(int *)*r);
+	m->values = (double **) malloc(sizeof(double *)*r);
 	if(!m->values) return NULL;
 
 	m->rows = r;
 	m->cols = c;
 
 	for(int i = 0; i < r; i++){
-		m->values[i] = (int *) malloc(sizeof(int)*c);
+		m->values[i] = (double *) malloc(sizeof(double)*c);
 		if(!m->values[i]) return NULL;
 	}
 
@@ -42,7 +42,7 @@ void PrintMatrix(Matrix *m){
 	
 	for(int i = 0; i < m->rows; i++){
 		for(int j = 0; j < m->cols; j++){
-			printf("%d ", m->values[i][j]);
+			printf("%-3.2lf ", m->values[i][j]);
 		}
 		printf("\n");
 	}
@@ -64,12 +64,12 @@ int FindPivot(Matrix *matrix, int col){
 }
 
 void SwapLines(Matrix *matrix, int line1, int line2){
-	int *aux = matrix->values[line1];
+	double *aux = matrix->values[line1];
 	matrix->values[line1] = matrix->values[line2];
 	matrix->values[line2] = aux;
 }
 
-void MultiplyLineByScalar(Matrix *matrix, int line, float value){
+void MultiplyLineByScalar(Matrix *matrix, int line, double value){
 
 	#pragma omp parallel for
 	for(int i = 0; i < matrix->cols; i++)
@@ -83,14 +83,15 @@ void AddLines(Matrix *matrix, int line1, int line2){
 		matrix->values[line1][i] += matrix->values[line2][i];
 }
 
-int *ToArray(Matrix *matrix, int *length){
+double *ToArray(Matrix *matrix, int *length){
 
-	int _length = matrix->rows*matrix->cols;
-	int *array = (int *) malloc(sizeof(int)*_length);
+	int _length = matrix->rows*matrix->cols; // Resulting array length
+	size_t lineSize = sizeof(double)*matrix->cols; // Matrix's lines size in bytes
+	
+	double *array = (double *) malloc(sizeof(double)*_length);
 
-	for(int i = 0; i < matrix->rows; i++){
-		memcpy(&array[i*matrix->cols], matrix->values[i], sizeof(int)*matrix->cols);
-	}
+	for(int i = 0; i < matrix->rows; i++)
+		memcpy(&array[i*matrix->cols], matrix->values[i], lineSize);
 
 	if(length != NULL) *length = _length;
 	return array;

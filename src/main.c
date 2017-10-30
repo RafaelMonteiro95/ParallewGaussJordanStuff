@@ -36,7 +36,6 @@ int main(int argc, char *argv[]){
 	int *recv = NULL;
 
 	int *sendVec;
-	int *displacement;
 
 #ifdef DEBUG
 	fprintf(stderr, "[debug] argc: %d\n", argc);
@@ -61,39 +60,43 @@ int main(int argc, char *argv[]){
 	if(rank == 0){
 		for(i = 0; i < matrix->rows; i++){
 			for(j = 0; j < matrix->cols; j++){
-				scanf("%d", &(matrix->values[i][j]) );
+				scanf("%lf", &(matrix->values[i][j]) );
 			}
 		}
 	}
 	
 	/* TEST */
-	int *array = ToArray(matrix, NULL);
+	double *array = ToArray(matrix, NULL);
 	printf("Array[%d] = {", matrix->rows*matrix->cols);
 	for(i = 0; i < matrix->rows*matrix->cols; i++){
-		printf("%d, ", array[i]);
+		printf("%lf, ", array[i]);
 	} printf("\b\b}\n");
 	free(array);
 	/* END TEST*/
 
-	// For each column
-	for(i = 0; i < matrix->cols; i++){
+	// For each row
+	for(i = 0; i < matrix->rows; i++){
 		
 		/* Master only */
 		if(rank == 0){
 
+			printf("col: %d\n", i);
+			PrintMatrix(matrix);
 			/* Find pivot - Use OpenMP here */
-			// FindPivot(matrix);
-
-			/* Position pivot */
-			// SwapLines(matrix, line1, line2);
+			int pline = FindPivot(matrix, i);
+			printf("pline: %d\n", pline);
 
 			/* Reduce pivot line (divide line by pivot) - Use OpenMP here */
-			// MultiplyLineByScalar(matrix, line, value);
+			// Its easies to first divide pivot line and then swap it
+			MultiplyLineByScalar(matrix, pline, 1.0/matrix->values[pline][i]);
+			PrintMatrix(matrix);
+
+			/* Position pivot */
+			printf("Swapping lines %d and %d\n", pline, i);
+			SwapLines(matrix, pline, i);
+			PrintMatrix(matrix);
 
 			/* Send pivot and their line (indexed by rank) to each slaves */
-			// NOTE: dá pra usar aqueles tipos de dados q o psergio usou no
-			// exemplo da multiplicação de matriz (vetor) pra separar cada linha
-			// da matriz e mandar tudo de uma vez
 
 		// Slaves
 		} else {
@@ -127,7 +130,6 @@ int main(int argc, char *argv[]){
 	MPI_Finalize();
 	free(recv);
 	free(sendVec);
-	free(displacement);
 
 	return 0;
 }
