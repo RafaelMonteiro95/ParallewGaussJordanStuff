@@ -23,33 +23,16 @@ inline void kill(int mpi_error){
 	exit(1);
 }
 
-void usage(const char *progName){
-	printf("Usage: mpiexec -np [nproc] %s [nrows] [ncols]", progName);
-}
-
 int main(int argc, char *argv[]){
 
-	int nproc, rank;
-	Matrix *matrix = NULL;
-	
 	int i, j;
+	int r, c;
+	int nproc, rank;
+	
 	int *recv = NULL;
-
 	int *sendVec;
-
-#ifdef DEBUG
-	fprintf(stderr, "[debug] argc: %d\n", argc);
-	for(i = 0; i < argc; i++)
-		fprintf(stderr, "[debug] argv[%d]: %s\n", i, argv[i]);
-#endif
-
-	if(argc != 3){
-		usage(argv[0]);
-		return 0;
-	}
-
-	// Get nrows and ncols from command line
-	matrix = CreateMatrix(atoi(argv[1]), atoi(argv[2]));
+	
+	Matrix *matrix = NULL;
 
 	/* Initialization */
 	MPI_Init(&argc, &argv);
@@ -58,6 +41,11 @@ int main(int argc, char *argv[]){
 
 	/* Read matrix */
 	if(rank == 0){
+		
+		printf("Rows and cols: ");
+		scanf("%d%d", &r, &c);
+		matrix = CreateMatrix(r, c);
+		
 		for(i = 0; i < matrix->rows; i++){
 			for(j = 0; j < matrix->cols; j++){
 				scanf("%lf", &(matrix->values[i][j]) );
@@ -65,36 +53,46 @@ int main(int argc, char *argv[]){
 		}
 	}
 	
-	/* TEST */
-	double *array = ToArray(matrix, NULL);
-	printf("Array[%d] = {", matrix->rows*matrix->cols);
-	for(i = 0; i < matrix->rows*matrix->cols; i++){
-		printf("%lf, ", array[i]);
-	} printf("\b\b}\n");
-	free(array);
-	/* END TEST*/
-
 	// For each row
 	for(i = 0; i < matrix->rows; i++){
 		
 		/* Master only */
 		if(rank == 0){
 
-			printf("col: %d\n", i);
-			PrintMatrix(matrix);
+			#ifdef DEBUG
+				printf("Searching pivot in col: %d\n", i);
+				PrintMatrix(matrix);
+			#endif
+
 			/* Find pivot - Use OpenMP here */
 			int pline = FindPivot(matrix, i);
-			printf("pline: %d\n", pline);
+
+			#ifdef DEBUG
+				if(pline == -1) printf("Pivot not found\n");
+				else printf("Pivot line: %d\n", pline);
+			#endif
+			
+			// Pivot not found (all values are 0 or matrix is reduced), 
+			// skip to next column
+			if(pline == -1) continue;
 
 			/* Reduce pivot line (divide line by pivot) - Use OpenMP here */
 			// Its easies to first divide pivot line and then swap it
 			MultiplyLineByScalar(matrix, pline, 1.0/matrix->values[pline][i]);
-			PrintMatrix(matrix);
+				
+			#ifdef DEBUG
+				printf("Multplying matrix by 1/%d\n", matrix->values[pline][i]);
+				PrintMatrix(matrix);
+			#endif
 
 			/* Position pivot */
-			printf("Swapping lines %d and %d\n", pline, i);
 			SwapLines(matrix, pline, i);
 			PrintMatrix(matrix);
+			
+			#ifdef DEBUG
+				printf("Swapping lines %d and %d\n", pline, i);	
+				PrintMatrix(matrix);
+			#endif
 
 			/* Send pivot and their line (indexed by rank) to each slaves */
 
