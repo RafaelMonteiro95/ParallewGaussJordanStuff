@@ -38,8 +38,8 @@ OBJ += $(foreach file, $(SRCPP), $(file:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o))
 # DEL_OBJ=$(wildcard $(OBJDIR)/*.o)
 # DEL_OBJ=$(filter-out %.o, $(OBJC))
 
-CC:=mpicc
-CFLAGS:=-O3 -I./$(INCDIR) -fopenmp -std=c11
+CC:=mpic++
+CFLAGS:=-O3 -I./$(INCDIR) -fopenmp
 NPROC:=1	
 MPIFLAGS:=-np $(NPROC)
 
@@ -74,7 +74,10 @@ main: $(OBJ)
 .PHONY: run
 # Run directives
 run:
-	$(DEBUGGER) ./$(BLDDIR)/$(NAME) $(MPIFLAGS) $(RUN_ARGS)
+	$(DEBUGGER) ./$(BLDDIR)/$(NAME) $(RUN_ARGS)
+
+mpi_run:
+	$(DEBUGGER) mpiexec -np $(NPROC) $(MPIFLAGS) ./$(BLDDIR)/$(NAME) $(RUN_ARGS)
 
 # Utility directives
 .PHONY: clean

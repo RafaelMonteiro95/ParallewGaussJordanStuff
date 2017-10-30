@@ -17,17 +17,14 @@
 
 #include "matrix.h"
 
-typedef enum { false, true } bool;
-
-void kill(int mpi_error){
+inline void kill(int mpi_error){
 	MPI_Abort(MPI_COMM_WORLD, mpi_error);
 	MPI_Finalize();
 	exit(1);
 }
 
 void usage(const char *progName){
-
-	printf("Usage: %s [nrows] [ncols]", progName);
+	printf("Usage: mpiexec -np [nproc] %s [nrows] [ncols]", progName);
 }
 
 int main(int argc, char *argv[]){
@@ -35,14 +32,20 @@ int main(int argc, char *argv[]){
 	int nproc, rank;
 	Matrix *matrix = NULL;
 	
-	int i;
+	int i, j;
 	int *recv = NULL;
 
 	int *sendVec;
 	int *displacement;
 
+#ifdef DEBUG
+	fprintf(stderr, "[debug] argc: %d\n", argc);
+	for(i = 0; i < argc; i++)
+		fprintf(stderr, "[debug] argv[%d]: %s\n", i, argv[i]);
+#endif
+
 	if(argc != 3){
-		usage(argv[1]);
+		usage(argv[0]);
 		return 0;
 	}
 
@@ -56,8 +59,23 @@ int main(int argc, char *argv[]){
 
 	/* Read matrix */
 	if(rank == 0){
-
+		for(i = 0; i < matrix->rows; i++){
+			for(j = 0; j < matrix->cols; j++){
+				scanf("%d", &(matrix->values[i][j]) );
+			}
+		}
 	}
+	
+	/* TEST */
+	int line = FindPivot(matrix, 0);
+	printf("pivot line: %d\n", line);
+	line = FindPivot(matrix, 1);
+	printf("pivot line: %d\n", line);
+	line = FindPivot(matrix, 2);
+	printf("pivot line: %d\n", line);
+	line = FindPivot(matrix, 3);
+	printf("pivot line: %d\n", line);
+	/* END TEST*/
 
 	// For each column
 	for(i = 0; i < matrix->cols; i++){
