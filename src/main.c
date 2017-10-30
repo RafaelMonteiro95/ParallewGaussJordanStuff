@@ -33,10 +33,10 @@ int main(int argc, char *argv[]){
 	Matrix *matrix = NULL;
 	
 	int i, j;
-	int *recv = NULL;
-
-	int *sendVec;
-	int *displacement;
+	
+	// recv and send buffers
+	int *recvbuffer = NULL;
+	int *sendbuffer = NULL;
 
 #ifdef DEBUG
 	fprintf(stderr, "[debug] argc: %d\n", argc);
@@ -77,6 +77,10 @@ int main(int argc, char *argv[]){
 	printf("pivot line: %d\n", line);
 	/* END TEST*/
 
+	/* Creates MPI_Scatter send and recv buffer */
+	sendbuffer = ToArray(matrix, matrix->cols * matrix->rows);
+	recvbuffer = (int *) malloc(matrix->cols * matrix->rows * sizeof(int));
+
 	// For each column
 	for(i = 0; i < matrix->cols; i++){
 		
@@ -84,15 +88,25 @@ int main(int argc, char *argv[]){
 		if(rank == 0){
 
 			/* Find pivot - Use OpenMP here */
-			// FindPivot(matrix);
+			int pivotLine = FindPivot(matrix);
 
-			/* Position pivot */
-			// SwapLines(matrix, line1, line2);
+			if(pivotLine != -1 && pivotLine-1 >= 0) {
+				
+				int line1 = pivotLine;
+				int line2 = pivotLine-1;
+				
+				/* Position pivot */
+				SwapLines(matrix, line1, line2);
+			}
 
 			/* Reduce pivot line (divide line by pivot) - Use OpenMP here */
-			// MultiplyLineByScalar(matrix, line, value);
+			MultiplyLineByScalar(matrix, line, value);
 
-			/* Send pivot and their line (indexed by rank) to each slaves */
+			/* Send pivot and their line (by rank) to each slaves */
+			MPI_Scatter(sendbuffer+1, matrix->cols, MPI_DOUBLE, recvbuffer,
+						   matrix->cols, MPI_DOUBLE, rank, MPI_COMM_WORLD);
+
+
 			// NOTE: dá pra usar aqueles tipos de dados q o psergio usou no
 			// exemplo da multiplicação de matriz (vetor) pra separar cada linha
 			// da matriz e mandar tudo de uma vez
@@ -100,7 +114,8 @@ int main(int argc, char *argv[]){
 		// Slaves
 		} else {
 			/* Receive message (pivot and rank lines) */
-
+			MPI_Scatter(sendbuffer+1, matrix->cols, MPI_DOUBLE, recvbuffer,
+							  matrix->cols, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		}
 
 		/* Sum each line (indexed by rank) with the pivot line multiplied by a 
@@ -115,8 +130,9 @@ int main(int argc, char *argv[]){
 
 			Use OpenMP here.
 		*/
-		// MultiplyLineByScalar(matrix, line, value);
-		// AddLines(matrix, line1, line2);
+		
+		MultiplyLineByScalar(matrix, line, value);
+		AddLines(matrix, line1, line2);
 
 		/* Send result back to master */
 
@@ -127,9 +143,8 @@ int main(int argc, char *argv[]){
 	}
 
 	MPI_Finalize();
-	free(recv);
-	free(sendVec);
-	free(displacement);
+	free(recvbuffer);
+	free(sendbuffer);
 
 	return 0;
 }
