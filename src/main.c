@@ -3,7 +3,6 @@
 	Giovanna Oliveira Guimarães 9293692
 	Rafael Augusto Monteiro		9293095
 	Choyoung Francisco Lim 		6436060
-
 	NOTE:
 	Modelo do código: https://docs.google.com/document/d/129-iAEgjICFppIovFr41jjV9S2ORI6DCErZhCD0yePE/edit?usp=sharing
 	Implementar seguindo o passo a passo modelado
@@ -23,34 +22,17 @@ inline void kill(int mpi_error){
 	exit(1);
 }
 
-void usage(const char *progName){
-	printf("Usage: mpiexec -np [nproc] %s [nrows] [ncols]", progName);
-}
-
 int main(int argc, char *argv[]){
 
-	int nproc, rank;
-	Matrix *matrix = NULL;
-	
 	int i, j;
+	int r, c;
+	int nproc, rank, pline;
 	
-	// recv and send buffers
-	int *recvbuffer = NULL;
-	int *sendbuffer = NULL;
-
-#ifdef DEBUG
-	fprintf(stderr, "[debug] argc: %d\n", argc);
-	for(i = 0; i < argc; i++)
-		fprintf(stderr, "[debug] argv[%d]: %s\n", i, argv[i]);
-#endif
-
-	if(argc != 3){
-		usage(argv[0]);
-		return 0;
-	}
-
-	// Get nrows and ncols from command line
-	matrix = CreateMatrix(atoi(argv[1]), atoi(argv[2]));
+	int *recv = NULL;
+	int *sendVec;
+	int *pivotline;
+	
+	Matrix *matrix = NULL;
 
 	/* Initialization */
 	MPI_Init(&argc, &argv);
@@ -59,63 +41,78 @@ int main(int argc, char *argv[]){
 
 	/* Read matrix */
 	if(rank == 0){
+		
+		printf("Rows and cols: ");
+		scanf("%d%d", &r, &c);
+		matrix = CreateMatrix(r, c);
+		
 		for(i = 0; i < matrix->rows; i++){
 			for(j = 0; j < matrix->cols; j++){
-				scanf("%d", &(matrix->values[i][j]) );
+				scanf("%lf", &(matrix->values[i][j]));
 			}
 		}
 	}
+
+	recv = (int *) malloc(matrix->cols * sizeof(int));
+	pivot = (int *) malloc(matrix->cols * sizeof(int));
 	
-	/* TEST */
-	int line = FindPivot(matrix, 0);
-	printf("pivot line: %d\n", line);
-	line = FindPivot(matrix, 1);
-	printf("pivot line: %d\n", line);
-	line = FindPivot(matrix, 2);
-	printf("pivot line: %d\n", line);
-	line = FindPivot(matrix, 3);
-	printf("pivot line: %d\n", line);
-	/* END TEST*/
-
-	/* Creates MPI_Scatter send and recv buffer */
-	sendbuffer = ToArray(matrix, matrix->cols * matrix->rows);
-	recvbuffer = (int *) malloc(matrix->cols * matrix->rows * sizeof(int));
-
-	// For each column
-	for(i = 0; i < matrix->cols; i++){
+	// For each row
+	for(i = 0; i < matrix->rows; i++){
 		
 		/* Master only */
 		if(rank == 0){
 
-			/* Find pivot - Use OpenMP here */
-			int pivotLine = FindPivot(matrix);
+			sendVec = ToArray(matrix, matrix->cols*matrix->rows);
 
-			if(pivotLine != -1 && pivotLine-1 >= 0) {
-				
-				int line1 = pivotLine;
-				int line2 = pivotLine-1;
-				
-				/* Position pivot */
-				SwapLines(matrix, line1, line2);
-			}
+			#ifdef DEBUG
+				printf("Searching pivot in col: %d\n", i);
+				PrintMatrix(matrix);
+			#endif
+
+			/* Find pivot - Use OpenMP here */
+			pline = FindPivot(matrix, i);
+
+			#ifdef DEBUG
+				if(pline == -1) printf("Pivot not found\n");
+				else printf("Pivot line: %d\n", pline);
+			#endif
+			
+			// Pivot not found (all values are 0 or matrix is reduced), 
+			// skip to next column
+			if(pline == -1) continue;
 
 			/* Reduce pivot line (divide line by pivot) - Use OpenMP here */
-			MultiplyLineByScalar(matrix, line, value);
+			// Its easies to first divide pivot line and then swap it
+			MultiplyLineByScalar(matrix, pline, 1.0/matrix->values[pline][i]);
+				
+			#ifdef DEBUG
+				printf("Multplying matrix by 1/%d\n", matrix->values[pline][i]);
+				PrintMatrix(matrix);
+			#endif
 
-			/* Send pivot and their line (by rank) to each slaves */
-			MPI_Scatter(sendbuffer+1, matrix->cols, MPI_DOUBLE, recvbuffer,
-						   matrix->cols, MPI_DOUBLE, rank, MPI_COMM_WORLD);
+			/* Position pivot */
+			SwapLines(matrix, pline, i);
+			PrintMatrix(matrix);
+			
+			#ifdef DEBUG
+				printf("Swapping lines %d and %d\n", pline, i);	
+				PrintMatrix(matrix);
+			#endif
 
+			/* Send pivot and their line (indexed by rank) to each slaves */
+			MPI_Bcast(&matrix->values[pline], 1, MPI_INT, rank, MPI_COMM_WORLD);
+      		MPI_Scatter(&sendVec[1], matrix->cols, MPI_DOUBLE, recv, matrix->cols,
+      											MPI_DOUBLE, rank, MPI_COMM_WORLD);
 
-			// NOTE: dá pra usar aqueles tipos de dados q o psergio usou no
-			// exemplo da multiplicação de matriz (vetor) pra separar cada linha
-			// da matriz e mandar tudo de uma vez
+      		free(sendVec);
 
 		// Slaves
 		} else {
 			/* Receive message (pivot and rank lines) */
-			MPI_Scatter(sendbuffer+1, matrix->cols, MPI_DOUBLE, recvbuffer,
-							  matrix->cols, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+			MPI_Bcast(pivotline, 1, MPI_INT, 0, MPI_COMM_WORLD);
+      		MPI_Scatter(&sendVec[1], matrix->cols, MPI_DOUBLE, recv, matrix->cols,
+      											   MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
 		}
 
 		/* Sum each line (indexed by rank) with the pivot line multiplied by a 
@@ -127,12 +124,10 @@ int main(int argc, char *argv[]){
 			+[0, 2, 3, 4]
 			---------------
 			 [0, 0, -1, -2]
-
 			Use OpenMP here.
 		*/
-		
-		MultiplyLineByScalar(matrix, line, value);
-		AddLines(matrix, line1, line2);
+		// MultiplyLineByScalar(matrix, line, value);
+		// AddLines(matrix, line1, line2);
 
 		/* Send result back to master */
 
@@ -143,8 +138,8 @@ int main(int argc, char *argv[]){
 	}
 
 	MPI_Finalize();
-	free(recvbuffer);
-	free(sendbuffer);
+	free(recv);
+	free(pivotline);
 
 	return 0;
 }
