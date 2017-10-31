@@ -49,12 +49,12 @@ void PrintMatrix(Matrix *m){
 	printf("\n");
 }
 
-int FindPivot(Matrix *matrix, int col){
+int FindPivot(Matrix *matrix, int col, int prevPivotLine){
 	
 	int pivotLine = -1;
 
 	#pragma omp parallel for if(matrix->rows - col > PARALLEL_THRESHOLD)
-	for(int i = col; i < matrix->rows; i++){
+	for(int i = prevPivotLine; i < matrix->rows; i++){
 		if(matrix->values[i][col] != 0){
 			pivotLine = i;
 		}

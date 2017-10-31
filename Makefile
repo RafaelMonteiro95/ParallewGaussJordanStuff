@@ -40,7 +40,7 @@ OBJ += $(foreach file, $(SRCPP), $(file:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o))
 
 CC:=mpic++
 CFLAGS:=-O3 -I./$(INCDIR) -fopenmp
-NPROC:=2	
+NPROC:=3
 MPIFLAGS:=-np $(NPROC)
 
 USER_LIBS:=-lpthread
@@ -153,6 +153,7 @@ checkdirs:
 	if [ ! -d $(LIBDIR)/ ]; then mkdir -p $(LIBDIR)/; fi
 	if [ ! -d $(SRCDIR)/ ]; then mkdir -p $(SRCDIR)/; fi
 	if [ ! -d $(OBJDIR)/ ]; then mkdir -p $(OBJDIR)/; fi
+	if [ ! -d logs/ 	 ]; then mkdir -p logs/		; fi
 
 # Check if project has a name
 checkname: 

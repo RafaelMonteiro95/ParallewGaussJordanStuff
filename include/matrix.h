@@ -14,7 +14,7 @@ void PrintMatrix(Matrix *m);
 void SwapLines(Matrix *matrix, int line1, int line2);
 
 // Returns the pivot's line (-1 if not found or out of bounds)
-int FindPivot(Matrix *matrix, int col);
+int FindPivot(Matrix *matrix, int col, int prevPivotLine);
 
 // This function overwrite the matrix's destLine with the new values.
 void AddLines(Matrix *matrix, int destLine, int line2);
