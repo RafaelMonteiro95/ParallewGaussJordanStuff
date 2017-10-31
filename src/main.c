@@ -29,7 +29,7 @@ int main(int argc, char *argv[]){
 	int nproc, rank, pline;
 	
 	int *recv = NULL;
-	int *sendVec;
+	double *sendVec;
 	int *pivotline;
 	
 	Matrix *matrix = NULL;
@@ -55,7 +55,7 @@ int main(int argc, char *argv[]){
 	}
 
 	recv = (int *) malloc(matrix->cols * sizeof(int));
-	pivot = (int *) malloc(matrix->cols * sizeof(int));
+	pivotline = (int *) malloc(matrix->cols * sizeof(int));
 	
 	// For each row
 	for(i = 0; i < matrix->rows; i++){
@@ -63,7 +63,8 @@ int main(int argc, char *argv[]){
 		/* Master only */
 		if(rank == 0){
 
-			sendVec = ToArray(matrix, matrix->cols*matrix->rows);
+			int size = matrix->cols*matrix->rows;
+			sendVec = ToArray(matrix, &size);
 
 			#ifdef DEBUG
 				printf("Searching pivot in col: %d\n", i);
