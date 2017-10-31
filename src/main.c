@@ -48,6 +48,7 @@ int main(int argc, char *argv[]){
 		
 		for(i = 0; i < matrix->rows; i++){
 			for(j = 0; j < matrix->cols; j++){
+
 				scanf("%lf", &(matrix->values[i][j]));
 			}
 		}

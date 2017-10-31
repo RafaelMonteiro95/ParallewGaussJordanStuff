@@ -4,7 +4,7 @@
 typedef struct matrix {
 
 	int rows, cols;
-	int **values;
+	double **values;
 
 } Matrix;
 
@@ -20,6 +20,9 @@ int FindPivot(Matrix *matrix, int col);
 void AddLines(Matrix *matrix, int destLine, int line2);
 
 // This function overwrite the matrix's destLine with the new values.
-void MultiplyLineByScalar(Matrix *matrix, int line, float value);
+void MultiplyLineByScalar(Matrix *matrix, int line, double value);
+
+// The user must free the returned buffer
+double *ToArray(Matrix *matrix, int *length);
 
 #endif
