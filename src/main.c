@@ -26,7 +26,8 @@ int main(int argc, char *argv[]){
 
 	int i, j;
 	int r, c;
-	int nproc, rank, pline;
+	int nproc, rank;
+	int cols, pline;
 	
 	int *recv = NULL;
 	double *sendVec;
@@ -52,6 +53,8 @@ int main(int argc, char *argv[]){
 				scanf("%lf", &(matrix->values[i][j]));
 			}
 		}
+
+		MPI_Bcast(&matrix->cols, 1, MPI_INT, rank, MPI_COMM_WORLD);
 	}
 
 	recv = (int *) malloc(matrix->cols * sizeof(int));
@@ -102,20 +105,21 @@ int main(int argc, char *argv[]){
 			#endif
 
 			/* Send pivot and their line (indexed by rank) to each slaves */
-			MPI_Bcast(&matrix->values[pline], 1, MPI_INT, rank, MPI_COMM_WORLD);
+			MPI_Bcast(matrix->values[pline], matrix->cols, MPI_INT, rank, MPI_COMM_WORLD);
       		MPI_Scatter(&sendVec[1], matrix->cols, MPI_DOUBLE, recv, matrix->cols,
       											MPI_DOUBLE, rank, MPI_COMM_WORLD);
-
-      		free(sendVec);
 
 		// Slaves
 		} else {
 			/* Receive message (pivot and rank lines) */
-			MPI_Bcast(pivotline, 1, MPI_INT, 0, MPI_COMM_WORLD);
-      		MPI_Scatter(&sendVec[1], matrix->cols, MPI_DOUBLE, recv, matrix->cols,
-      											   MPI_DOUBLE, 0, MPI_COMM_WORLD);
+			MPI_Bcast(&cols, 1, MPI_INT, 0, MPI_COMM_WORLD);
+			MPI_Bcast(pivotline, cols, MPI_INT, 0, MPI_COMM_WORLD);
+      		MPI_Scatter(&sendVec[1], cols, MPI_DOUBLE, recv, cols,
+      								MPI_DOUBLE, 0, MPI_COMM_WORLD);
 
 		}
+
+		free(sendVec);
 
 		/* Sum each line (indexed by rank) with the pivot line multiplied by a 
 		scalar. The scalar shall be the oposite of the element in the same 

@@ -40,7 +40,7 @@ OBJ += $(foreach file, $(SRCPP), $(file:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o))
 
 CC:=mpic++
 CFLAGS:=-O3 -I./$(INCDIR) -fopenmp
-NPROC:=4	
+NPROC:=2	
 MPIFLAGS:=-np $(NPROC)
 
 USER_LIBS:=-lpthread
