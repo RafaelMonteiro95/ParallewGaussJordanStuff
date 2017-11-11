@@ -31,6 +31,9 @@ int main(int argc, char *argv[]){
 	
 	int *recv = NULL;
 	int *sendVec;
+
+	FILE* matrixFp;
+	FILE* vectorFp;
 	
 	Matrix *matrix = NULL;
 
@@ -41,18 +44,44 @@ int main(int argc, char *argv[]){
 
 	/* Read matrix */
 	if(rank == 0){
-		
-		printf("Rows and cols: ");
-		scanf("%d%d", &r, &c);
-		matrix = CreateMatrix(r, c);
+
+		// opening files with equation system
+		matrixFp = fopen("matriz.txt","r");
+		vectorFp = fopen("vetor.txt","r");
+		if(!matrixFp || !vectorFp) {
+			printf("Could not open %s.\n",matrixFp? "matriz.txt":"vetor.txt");
+			kill(1);
+		}
+
+		// getting size of matrix by counting the number of '\n' in the file.
+		char cbuff;
+		c = 0, r = 0;
+		while(!feof(matrixFp)){
+			cbuff = fgetc(matrixFp);
+			if(cbuff == '\n'){
+				c++;
+				r++;
+			}
+		}
+		rewind(matrixFp);
+
+		// Creating the matrix to be reduced.
+		// I'm using c+1 because there's the results column which isn't counted when counting to c
+		matrix = CreateMatrix(r, c + 1);
 		
 		for(i = 0; i < matrix->rows; i++){
-			for(j = 0; j < matrix->cols; j++){
-				scanf("%lf", &(matrix->values[i][j]) );
+			for(j = 0; j < matrix->cols - 1; j++){
+				fscanf(matrixFp,"%lf", &(matrix->values[i][j]) );
 			}
+		}
+
+		// VectorFp contains our matrix last column
+		for(i = 0; i < matrix->rows; i++){
+			fscanf(vectorFp,"%lf", &(matrix->values[i][c]) );
 		}
 	}
 	
+
 	// For each row
 	for(i = 0; i < matrix->rows; i++){
 		

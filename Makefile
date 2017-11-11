@@ -38,7 +38,7 @@ OBJ += $(foreach file, $(SRCPP), $(file:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o))
 # DEL_OBJ=$(wildcard $(OBJDIR)/*.o)
 # DEL_OBJ=$(filter-out %.o, $(OBJC))
 
-CC:=mpic++
+CC:=mpicc
 CFLAGS:=-O3 -I./$(INCDIR) -fopenmp
 NPROC:=1	
 MPIFLAGS:=-np $(NPROC)
