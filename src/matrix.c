@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <math.h>
 
 #include "matrix.h"
 
@@ -38,23 +39,18 @@ void DestroyMatrix(Matrix **m){
 
 void PrintMatrix(Matrix *m){
 
-	if(!m) return (void) printf("(nil)");
-	
-	for(int i = 0; i < m->rows; i++){
-		for(int j = 0; j < m->cols; j++){
-			printf("%-3.2lf ", m->values[i][j]);
-		}
-		printf("\n");
-	}
-	printf("\n");
+	FPrintMatrix(m,stdout);
 }
 
 void FPrintMatrix(Matrix *m, FILE* fp){
 
-	if(!m) return (void) printf("(nil)");
+	if(!m) return (void) fprintf(fp,"(nil)");
 	
 	for(int i = 0; i < m->rows; i++){
 		for(int j = 0; j < m->cols; j++){
+			// Sometimes -0.0 is stored instead of 0.0.
+			if(fabs(m->values[i][j]) < 0.000001) m->values[i][j] = 0.0;
+			
 			fprintf(fp,"%-3.2lf ", m->values[i][j]);
 		}
 		fprintf(fp,"\n");
@@ -90,11 +86,25 @@ void MultiplyLineByScalar(Matrix *matrix, int line, double value){
 		matrix->values[line][i] *= value;
 }
 
+void _MultiplyLineByScalar(double* line, int size, double value){
+
+	#pragma omp parallel for
+	for(int i = 0; i < size; i++)
+		line[i] *= value;
+}
+
 void AddLines(Matrix *matrix, int line1, int line2){
 	
 	#pragma omp parallel for
 	for(int i = 0; i < matrix->cols; i++)
 		matrix->values[line1][i] += matrix->values[line2][i];
+}
+
+void _AddLines(double* destline, double* oline, int size){
+
+	#pragma omp parallel for
+	for(int i = 0; i < size; i++)
+		destline[i] += oline[i];
 }
 
 double *ToArray(Matrix *matrix, int *length){

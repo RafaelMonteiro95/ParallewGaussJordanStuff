@@ -19,9 +19,11 @@ int FindPivot(Matrix *matrix, int col);
 
 // This function overwrite the matrix's destLine with the new values.
 void AddLines(Matrix *matrix, int destLine, int line2);
+void _AddLines(double* destline, double* oline, int size);
 
 // This function overwrite the matrix's destLine with the new values.
 void MultiplyLineByScalar(Matrix *matrix, int line, double value);
+void _MultiplyLineByScalar(double *line, int size, double value);
 
 // The user must free the returned buffer
 double *ToArray(Matrix *matrix, int *length);

@@ -11,6 +11,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <time.h>
 #include <omp.h>
 #include <mpi.h>
@@ -79,8 +80,12 @@ int main(int argc, char *argv[]){
 		for(i = 0; i < matrix->rows; i++){
 			fscanf(vectorFp,"%lf", &(matrix->values[i][c]) );
 		}
+
+		fclose(matrixFp);
+		fclose(vectorFp);
 	}
 
+	int prow, pcol;
 	// For each row
 	for(i = 0; i < matrix->rows; i++){
 		
@@ -93,43 +98,35 @@ int main(int argc, char *argv[]){
 			// #endif
 
 			/* Find pivot - Use OpenMP here */
-			int pline = FindPivot(matrix, i);
-			// printf("pline:%d\n",pline);
+			pcol = i;
+			prow = FindPivot(matrix, pcol);
+			// printf("prow:%d\n",prow);
 
 			// #ifdef DEBUG
-			// 	if(pline == -1) printf("Pivot not found\n");
-			// 	else printf("Pivot line: %d\n", pline);
+			// 	if(prow == -1) printf("Pivot not found\n");
+			// 	else printf("Pivot line: %d\n", prow);
 			// #endif
 			
 			// Pivot not found (all values are 0 or matrix is reduced), 
 			// skip to next column
-			if(pline == -1) continue;
+			if(prow == -1) continue;
 
 			/* Reduce pivot line (divide line by pivot) - Use OpenMP here */
 			// Its easies to first divide pivot line and then swap it
-			MultiplyLineByScalar(matrix, pline, 1.0/matrix->values[pline][i]);
+			MultiplyLineByScalar(matrix, prow, 1.0/matrix->values[prow][i]);
 				
 			// #ifdef DEBUG
-			// 	printf("Multplying matrix by 1/%d\n", matrix->values[pline][i]);
+			// 	printf("Multplying matrix by 1/%d\n", matrix->values[prow][i]);
 			// 	PrintMatrix(matrix);
 			// #endif
 
 			/* Position pivot */
-			SwapLines(matrix, pline, i);
+			SwapLines(matrix, prow, i);
 
-			int j;
-			/* zeroing values under the pivot */
-			#pragma omp parallel for
-			for(j = pline+1; j < matrix->rows; j++){
-				// printf("currently in j = %d, i = %d\n",j,i);
-				matrix->values[j][i] = 0;
-			}			
 			// #ifdef DEBUG
-			// 	printf("Swapping lines %d and %d\n", pline, i);	
+			// 	printf("Swapping lines %d and %d\n", prow, i);	
 			// 	PrintMatrix(matrix);
 			// #endif
-
-			PrintMatrix(matrix);
 
 			/* Send pivot and their line (indexed by rank) to each slaves */
 
@@ -138,6 +135,35 @@ int main(int argc, char *argv[]){
 			/* Receive message (pivot and rank lines) */
 
 		}
+		
+
+		/* SEQUENTIAL VERSION OF CODE*/
+
+		double* pivotRow = matrix->values[prow];
+		double* backupRow = malloc(sizeof(double)*matrix->cols);
+		double* currentRow = NULL;
+
+		int j;
+		for(j = 0; j < matrix->rows; j++){
+
+			if (j == prow) continue;
+			// calculating the scalar value of line product
+			double value = -matrix->values[j][pcol];
+
+			// printf("matrix[%d][%d] = %lf ,value: %lf\n",j,pcol,matrix->values[j][pcol],value);
+
+			// Creating a auxiliar vector to store the prod. value
+			memcpy(backupRow, pivotRow, sizeof(double) * matrix->cols);
+			// Multipying row by scalar
+			_MultiplyLineByScalar(backupRow, matrix->cols, value);
+
+			// Sum of currently selected row and multiplied row
+			currentRow = matrix->values[j];
+			_AddLines(currentRow,backupRow,matrix->cols);
+		}
+		printf("Final Result:\n");
+		PrintMatrix(matrix);
+		/* END SEQUENTIAL CODE */
 
 		/* Sum each line (indexed by rank) with the pivot line multiplied by a 
 		scalar. The scalar shall be the oposite of the element in the same 
@@ -151,6 +177,14 @@ int main(int argc, char *argv[]){
 
 			Use OpenMP here.
 		*/
+
+
+		/* PARALLEL CODE*/
+
+
+		/* END PARALLEL CODE */
+
+
 		// MultiplyLineByScalar(matrix, line, value);
 		// AddLines(matrix, line1, line2);
 
