@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
 	/* Read matrix */
 	if(rank == 0) {
 
-		printf("Rows and cols: ");
+		if(isatty(STDIN_FILENO)) printf("Rows and cols: ");
 		scanf("%d%d", &r, &c);
 
 		if(nproc != r) {
