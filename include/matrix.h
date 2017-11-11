@@ -11,6 +11,7 @@ typedef struct matrix {
 Matrix *CreateMatrix(int r, int c);
 void DestroyMatrix(Matrix **m);
 void PrintMatrix(Matrix *m);
+void FPrintMatrix(Matrix *m, FILE* fp);
 void SwapLines(Matrix *matrix, int line1, int line2);
 
 // Returns the pivot's line (-1 if not found or out of bounds)

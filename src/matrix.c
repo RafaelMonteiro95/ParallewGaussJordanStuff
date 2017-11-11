@@ -49,6 +49,19 @@ void PrintMatrix(Matrix *m){
 	printf("\n");
 }
 
+void FPrintMatrix(Matrix *m, FILE* fp){
+
+	if(!m) return (void) printf("(nil)");
+	
+	for(int i = 0; i < m->rows; i++){
+		for(int j = 0; j < m->cols; j++){
+			fprintf(fp,"%-3.2lf ", m->values[i][j]);
+		}
+		fprintf(fp,"\n");
+	}
+	fprintf(fp,"\n");
+}
+
 int FindPivot(Matrix *matrix, int col){
 	
 	int pivotLine = -1;

@@ -81,6 +81,7 @@ int main(int argc, char *argv[]){
 		}
 	}
 	
+	exit(0);
 
 	// For each row
 	for(i = 0; i < matrix->rows; i++){
