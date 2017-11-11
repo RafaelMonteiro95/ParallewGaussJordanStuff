@@ -7,6 +7,7 @@
 	NOTE:
 	Modelo do código: https://docs.google.com/document/d/129-iAEgjICFppIovFr41jjV9S2ORI6DCErZhCD0yePE/edit?usp=sharing
 	Implementar seguindo o passo a passo modelado
+	http://www.resolvermatrices.com/ para testar casos de teste até 16x16
 */
 
 #include <stdio.h>
@@ -35,6 +36,10 @@ int main(int argc, char *argv[]){
 
 	FILE* matrixFp;
 	FILE* vectorFp;
+	
+	double* pivotRow = NULL;
+	double* currentRow = NULL;
+	// double* backupRow = NULL;
 	
 	Matrix *matrix = NULL;
 
@@ -85,6 +90,8 @@ int main(int argc, char *argv[]){
 		fclose(vectorFp);
 	}
 
+	PrintMatrix(matrix);
+
 	int prow, pcol;
 	// For each row
 	for(i = 0; i < matrix->rows; i++){
@@ -122,26 +129,45 @@ int main(int argc, char *argv[]){
 
 			/* Position pivot */
 			SwapLines(matrix, prow, i);
+			prow = i;
 
 			// #ifdef DEBUG
 			// 	printf("Swapping lines %d and %d\n", prow, i);	
 			// 	PrintMatrix(matrix);
 			// #endif
 
-			/* Send pivot and their line (indexed by rank) to each slaves */
+			// int size;
+			// sendVec = toArray(matrix, &size);
 
+			// /* Send pivot and their line (indexed by rank) to each slaves */
+			// MPI_Bcast(pivotRow, matrix->cols, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+			// MPI_Scatter(sendVec, size/nproc, MPI_Double, currentRow, matrix->cols, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+			PrintMatrix(matrix);
 		// Slaves
 		} else {
 			/* Receive message (pivot and rank lines) */
-
+			// MPI_Bcast(pivotRow, matrix->cols, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+			// MPI_Scatter(currentRow, matrix->cols, MPI_Double, currentRow, matrix->cols, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		}
 		
+		/* Sum each line (indexed by rank) with the pivot line multiplied by a 
+		scalar. The scalar shall be the oposite of the element in the same 
+		column as the pivot	of that line, i.e, if the pivot line is [0, 1, 2, 3] 
+		and the  line [0, 2, 3, 4] should be solved by multiplying the pivot 
+		line by -2 and then adding these two lines: 
+			 [0, 1, 2, 3]*(-2)
+			+[0, 2, 3, 4]
+			---------------
+			 [0, 0, -1, -2]
+
+			Use OpenMP here.
+		*/
+
+		// PrintMatrix(matrix);
 
 		/* SEQUENTIAL VERSION OF CODE*/
-
-		double* pivotRow = matrix->values[prow];
+		pivotRow = matrix->values[prow];
 		double* backupRow = malloc(sizeof(double)*matrix->cols);
-		double* currentRow = NULL;
 
 		int j;
 		for(j = 0; j < matrix->rows; j++){
@@ -159,24 +185,13 @@ int main(int argc, char *argv[]){
 
 			// Sum of currently selected row and multiplied row
 			currentRow = matrix->values[j];
+
 			_AddLines(currentRow,backupRow,matrix->cols);
 		}
-		printf("Final Result:\n");
-		PrintMatrix(matrix);
+		
 		/* END SEQUENTIAL CODE */
 
-		/* Sum each line (indexed by rank) with the pivot line multiplied by a 
-		scalar. The scalar shall be the oposite of the element in the same 
-		column as the pivot	of that line, i.e, if the pivot line is [0, 1, 2, 3] 
-		and the  line [0, 2, 3, 4] should be solved by multiplying the pivot 
-		line by -2 and then adding these two lines: 
-			 [0, 1, 2, 3]*(-2)
-			+[0, 2, 3, 4]
-			---------------
-			 [0, 0, -1, -2]
-
-			Use OpenMP here.
-		*/
+		PrintMatrix(matrix);
 
 
 		/* PARALLEL CODE*/
