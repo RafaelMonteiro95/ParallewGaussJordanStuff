@@ -80,8 +80,6 @@ int main(int argc, char *argv[]){
 			fscanf(vectorFp,"%lf", &(matrix->values[i][c]) );
 		}
 	}
-	
-	exit(0);
 
 	// For each row
 	for(i = 0; i < matrix->rows; i++){
@@ -89,18 +87,19 @@ int main(int argc, char *argv[]){
 		/* Master only */
 		if(rank == 0){
 
-			#ifdef DEBUG
-				printf("Searching pivot in col: %d\n", i);
-				PrintMatrix(matrix);
-			#endif
+			// #ifdef DEBUG
+			// 	printf("Searching pivot in col: %d\n", i);
+			// 	PrintMatrix(matrix);
+			// #endif
 
 			/* Find pivot - Use OpenMP here */
 			int pline = FindPivot(matrix, i);
+			// printf("pline:%d\n",pline);
 
-			#ifdef DEBUG
-				if(pline == -1) printf("Pivot not found\n");
-				else printf("Pivot line: %d\n", pline);
-			#endif
+			// #ifdef DEBUG
+			// 	if(pline == -1) printf("Pivot not found\n");
+			// 	else printf("Pivot line: %d\n", pline);
+			// #endif
 			
 			// Pivot not found (all values are 0 or matrix is reduced), 
 			// skip to next column
@@ -110,19 +109,27 @@ int main(int argc, char *argv[]){
 			// Its easies to first divide pivot line and then swap it
 			MultiplyLineByScalar(matrix, pline, 1.0/matrix->values[pline][i]);
 				
-			#ifdef DEBUG
-				printf("Multplying matrix by 1/%d\n", matrix->values[pline][i]);
-				PrintMatrix(matrix);
-			#endif
+			// #ifdef DEBUG
+			// 	printf("Multplying matrix by 1/%d\n", matrix->values[pline][i]);
+			// 	PrintMatrix(matrix);
+			// #endif
 
 			/* Position pivot */
 			SwapLines(matrix, pline, i);
+
+			int j;
+			/* zeroing values under the pivot */
+			#pragma omp parallel for
+			for(j = pline+1; j < matrix->rows; j++){
+				// printf("currently in j = %d, i = %d\n",j,i);
+				matrix->values[j][i] = 0;
+			}			
+			// #ifdef DEBUG
+			// 	printf("Swapping lines %d and %d\n", pline, i);	
+			// 	PrintMatrix(matrix);
+			// #endif
+
 			PrintMatrix(matrix);
-			
-			#ifdef DEBUG
-				printf("Swapping lines %d and %d\n", pline, i);	
-				PrintMatrix(matrix);
-			#endif
 
 			/* Send pivot and their line (indexed by rank) to each slaves */
 
