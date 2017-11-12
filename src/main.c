@@ -52,10 +52,11 @@ int main(int argc, char *argv[]){
 	if(rank == 0){
 
 		// opening files with equation system
-		matrixFp = fopen("matriz.txt","r");
-		vectorFp = fopen("vetor.txt","r");
+		matrixFp = fopen("matriz.txt", "r");
+		vectorFp = fopen("vetor.txt", "r");
+
 		if(!matrixFp || !vectorFp) {
-			printf("Could not open %s.\n",matrixFp? "matriz.txt":"vetor.txt");
+			printf("Could not open %s.\n", matrixFp ? "matriz.txt":"vetor.txt");
 			kill(1);
 		}
 
@@ -77,20 +78,18 @@ int main(int argc, char *argv[]){
 		
 		for(i = 0; i < matrix->rows; i++){
 			for(j = 0; j < matrix->cols - 1; j++){
-				fscanf(matrixFp,"%lf", &(matrix->values[i][j]) );
+				fscanf(matrixFp, "%lf", &(matrix->values[mat2vec(matrix->cols, i, j)]));
 			}
 		}
 
 		// VectorFp contains our matrix last column
 		for(i = 0; i < matrix->rows; i++){
-			fscanf(vectorFp,"%lf", &(matrix->values[i][c]) );
+			fscanf(vectorFp, "%lf", &(matrix->values[mat2vec(matrix->cols, i, c)]));
 		}
 
 		fclose(matrixFp);
 		fclose(vectorFp);
 	}
-
-	PrintMatrix(matrix);
 
 	int prow, pcol;
 	// For each row
@@ -120,10 +119,10 @@ int main(int argc, char *argv[]){
 
 			/* Reduce pivot line (divide line by pivot) - Use OpenMP here */
 			// Its easies to first divide pivot line and then swap it
-			MultiplyLineByScalar(matrix, prow, 1.0/matrix->values[prow][i]);
+			MultiplyLineByScalar(matrix, prow, 1.0/matrix->values[mat2vec(matrix->cols, prow, i)]);
 				
 			// #ifdef DEBUG
-			// 	printf("Multplying matrix by 1/%d\n", matrix->values[prow][i]);
+			// 	printf("Multplying matrix by 1/%d\n", matrix->values[mat2vec(matrix->cols, prow, i)]);
 			// 	PrintMatrix(matrix);
 			// #endif
 
@@ -166,7 +165,7 @@ int main(int argc, char *argv[]){
 		// PrintMatrix(matrix);
 
 		/* SEQUENTIAL VERSION OF CODE*/
-		pivotRow = matrix->values[prow];
+		// pivotRow = matrix->values[prow]; // FIXME
 		double* backupRow = malloc(sizeof(double)*matrix->cols);
 
 		int j;
@@ -174,9 +173,9 @@ int main(int argc, char *argv[]){
 
 			if (j == prow) continue;
 			// calculating the scalar value of line product
-			double value = -matrix->values[j][pcol];
+			double value = -matrix->values[mat2vec(matrix->cols, j, pcol)];
 
-			// printf("matrix[%d][%d] = %lf ,value: %lf\n",j,pcol,matrix->values[j][pcol],value);
+			// printf("matrix[%d][%d] = %lf ,value: %lf\n",j,pcol,matrix->values[mat2vec(matrix->cols, j, pcol)],value);
 
 			// Creating a auxiliar vector to store the prod. value
 			memcpy(backupRow, pivotRow, sizeof(double) * matrix->cols);
@@ -184,7 +183,7 @@ int main(int argc, char *argv[]){
 			_MultiplyLineByScalar(backupRow, matrix->cols, value);
 
 			// Sum of currently selected row and multiplied row
-			currentRow = matrix->values[j];
+			// currentRow = matrix->values[j]; //FIXME
 
 			_AddLines(currentRow,backupRow,matrix->cols);
 		}

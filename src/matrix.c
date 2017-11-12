@@ -9,53 +9,41 @@
 
 Matrix *CreateMatrix(int r, int c){
 
-	Matrix *m = (Matrix *) malloc(sizeof(Matrix));
+	Matrix *matrix = (Matrix *) malloc(sizeof(Matrix));
 	
-	if(!m) return NULL;
+	if(!matrix) return NULL;
 
-	m->values = (double **) malloc(sizeof(double *)*r);
-	if(!m->values) return NULL;
+	matrix->values = (double *) malloc(sizeof(double)*(c*r));
+	if(!matrix->values) return NULL;
 
-	m->rows = r;
-	m->cols = c;
+	matrix->rows = r;
+	matrix->cols = c;
 
-	for(int i = 0; i < r; i++){
-		m->values[i] = (double *) malloc(sizeof(double)*c);
-		if(!m->values[i]) return NULL;
-	}
-
-	return m;
+	return matrix;
 }
 
-void DestroyMatrix(Matrix **m){
+void DestroyMatrix(Matrix **matrix){
 
-	if(!m) return;
-
-	for(int i = 0; i < (*m)->rows; i++)
-		free((*m)->values[i]);
-	free((*m)->values);
-	free(*m);
+	if(!matrix) return;
+	free((*matrix)->values);
+	free(*matrix);
 }
 
-void PrintMatrix(Matrix *m){
+void PrintMatrix(Matrix *matrix){ FPrintMatrix(matrix, stdout); }
+void FPrintMatrix(Matrix *matrix, FILE* fp){
 
-	FPrintMatrix(m,stdout);
-}
-
-void FPrintMatrix(Matrix *m, FILE* fp){
-
-	if(!m) return (void) fprintf(fp,"(nil)");
+	if(!matrix) return (void) fprintf(fp, "(nil)");
 	
-	for(int i = 0; i < m->rows; i++){
-		for(int j = 0; j < m->cols; j++){
+	for(int i = 0; i < matrix->rows; i++){
+		for(int j = 0; j < matrix->cols; j++){
 			// Sometimes -0.0 is stored instead of 0.0.
-			if(fabs(m->values[i][j]) < 0.000001) m->values[i][j] = 0.0;
+			if(fabs(matrix->values[mat2vec(matrix->cols, i, j)]) < 0.000001) matrix->values[mat2vec(matrix->cols, i, j)] = 0.0;
 
-			fprintf(fp,"%-3.2lf ", m->values[i][j]);
+			fprintf(fp, "%-5.2lf ", matrix->values[mat2vec(matrix->cols, i, j)]);
 		}
-		fprintf(fp,"\n");
+		fprintf(fp, "\n");
 	}
-	fprintf(fp,"\n");
+	fprintf(fp, "\n");
 }
 
 int FindPivot(Matrix *matrix, int col){
@@ -64,7 +52,7 @@ int FindPivot(Matrix *matrix, int col){
 
 	#pragma omp parallel for if(matrix->rows - col > PARALLEL_THRESHOLD)
 	for(int i = col; i < matrix->rows; i++){
-		if(matrix->values[i][col] != 0){
+		if(matrix->values[mat2vec(matrix->cols, i, col)] != 0){
 			pivotLine = i;
 		}
 	}
@@ -73,16 +61,23 @@ int FindPivot(Matrix *matrix, int col){
 }
 
 void SwapLines(Matrix *matrix, int line1, int line2){
-	double *aux = matrix->values[line1];
-	matrix->values[line1] = matrix->values[line2];
-	matrix->values[line2] = aux;
+	
+	double *aux = (double *) malloc(sizeof(double)*matrix->cols); 
+	double *line1p = &(matrix->values[matrix->cols*line1]);
+	double *line2p = &(matrix->values[matrix->cols*line2]);
+	
+	memcpy(aux   , line1p, matrix->cols*sizeof(double));
+	memcpy(line1p, line2p, matrix->cols*sizeof(double));
+	memcpy(line2p, aux   , matrix->cols*sizeof(double));
+	
+	free(aux);
 }
 
 void MultiplyLineByScalar(Matrix *matrix, int line, double value){
 
 	#pragma omp parallel for
 	for(int i = 0; i < matrix->cols; i++)
-		matrix->values[line][i] *= value;
+		matrix->values[mat2vec(matrix->cols, line, i)] *= value;
 }
 
 void _MultiplyLineByScalar(double* line, int size, double value){
@@ -96,7 +91,8 @@ void AddLines(Matrix *matrix, int line1, int line2){
 	
 	#pragma omp parallel for
 	for(int i = 0; i < matrix->cols; i++)
-		matrix->values[line1][i] += matrix->values[line2][i];
+		matrix->values[mat2vec(matrix->cols, line1, i)] += 
+		matrix->values[mat2vec(matrix->cols, line2, i)];
 }
 
 void _AddLines(double* destline, double* oline, int size){
@@ -104,18 +100,4 @@ void _AddLines(double* destline, double* oline, int size){
 	#pragma omp parallel for
 	for(int i = 0; i < size; i++)
 		destline[i] += oline[i];
-}
-
-double *ToArray(Matrix *matrix, int *length){
-
-	int _length = matrix->rows*matrix->cols; // Resulting array length
-	size_t lineSize = sizeof(double)*matrix->cols; // Matrix's lines size in bytes
-	
-	double *array = (double *) malloc(sizeof(double)*_length);
-
-	for(int i = 0; i < matrix->rows; i++)
-		memcpy(&array[i*matrix->cols], matrix->values[i], lineSize);
-
-	if(length != NULL) *length = _length;
-	return array;
 }
