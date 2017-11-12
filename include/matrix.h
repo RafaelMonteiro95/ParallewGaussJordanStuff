@@ -4,11 +4,16 @@
 typedef struct matrix {
 
 	int rows, cols;
-	double **values;
+	double *values;
 
 } Matrix;
 
+#define mat2vec(ncols, row, col) 			(ncols*row + col)
+#define vec2mat(ncols, row, col, index) 	(row = index/ncols \
+											 col = index%ncols )
+
 Matrix *CreateMatrix(int r, int c);
+
 void DestroyMatrix(Matrix **m);
 void PrintMatrix(Matrix *m);
 void FPrintMatrix(Matrix *m, FILE* fp);
