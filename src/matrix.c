@@ -63,7 +63,6 @@ int FindPivot(Matrix *matrix, int col){
 
 void SwapLines(Matrix *matrix, int line1, int line2){
 
-	int i;
 	double *aux = (double *) malloc(sizeof(double)*matrix->cols); 
 	double *line1p = &(matrix->values[matrix->cols*line1]);
 	double *line2p = &(matrix->values[matrix->cols*line2]);

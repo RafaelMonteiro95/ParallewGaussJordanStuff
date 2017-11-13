@@ -34,17 +34,15 @@ int main(int argc, char *argv[]) {
 	int pcol, prow;
 	int chunkSize;
 
-	int cols, pline, prevPivotLine;
+	int cols, prevPivotLine;
 	
 	double scalar;
 	double *recv = NULL;
-	double *sendVec;
-	double *pivotline;
+	// double *sendVec;
+	// double *pivotline;
 	double *pivotRow = NULL;
 	double *currentRow = NULL;
 	double *backupRow = NULL;
-
-	// double* backupRow = NULL;
 
 	FILE* matrixFp;
 	FILE* vectorFp;
@@ -55,7 +53,6 @@ int main(int argc, char *argv[]) {
 	MPI_Init(&argc, &argv);
 	MPI_Comm_size(MPI_COMM_WORLD, &nproc);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
-
 
 #ifdef DEBUG
 
@@ -91,6 +88,7 @@ int main(int argc, char *argv[]) {
 				r++;
 			}
 		}
+		
 		// I'm using c+1 because there's the results column which isn't counted
 		rewind(matrixFp);
 
@@ -107,23 +105,23 @@ int main(int argc, char *argv[]) {
 		for(i = 0; i < matrix->rows; i++){
 			fscanf(vectorFp, "%lf", &(matrix->values[mat2vec(matrix->cols, i, c)]));
 		}
-
 	
 		//sending matrix size
 		c++;
-		// MPI_Bcast(&r, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&r, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
 		// Calculates chunk size
+		backupRow = (double *) malloc(sizeof(double) * c);
 		chunkSize = (r / nproc) + 1; 
+		#ifdef DEBUG
+			fprintf(stderr, "[debug] chunkSize: %d\n", chunkSize);
+		#endif
 
 		fclose(matrixFp);
 		fclose(vectorFp);
 
-
-		backupRow = malloc(sizeof(double) * c);
 	} else {
-
-		// MPI_Bcast(&r, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&r, 1, MPI_INT, 0, MPI_COMM_WORLD);
 		c = r+1;
 	}
 
@@ -133,24 +131,18 @@ int main(int argc, char *argv[]) {
 		/* Master only */
 		if(rank == 0) {
 
-	
-			int size = cols*matrix->rows;
-
 			#ifdef DEBUG
-				// printf("Searching pivot in col: %d\n", i);
-				// PrintMatrix(matrix);
+				printf("Searching pivot in col: %d\n", i);
+				PrintMatrix(matrix);
 			#endif
 
 			/* Find pivot - Use OpenMP here */
 			pcol = i;
-			prow = FindPivot(matrix, pcol); //FIXME
+			prow = FindPivot(matrix, pcol);
 
 			#ifdef DEBUG
-				// if(prow == -1) printf("Pivot not found\n");
-				// else printf("Pivot line: %d (value: %lf)\n", prow, matrix->values[mat2vec(c, prow, pcol)]);
-				// fprintf(stderr, "[debug] index: %d\n", mat2vec(c, prow, pcol));
-				// fprintf(stderr, "[debug] prow: %d\n", prow);
-				// fprintf(stderr, "[debug] pcol: %d\n", pcol);
+				if(prow == -1) printf("Pivot not found\n");
+				else printf("Pivot line: %d (value: %lf)\n", prow, matrix->values[mat2vec(c, prow, pcol)]);
 			#endif
 			
 			// Pivot not found (all values are 0 or matrix is reduced), 
@@ -158,8 +150,8 @@ int main(int argc, char *argv[]) {
 			if(prow == -1) continue;
 
 			#ifdef DEBUG
-				// printf("Multplying matrix by 1/%lf\n", matrix->values[mat2vec(c, prow, i)]);
-				// PrintMatrix(matrix);
+				printf("Multplying matrix by 1/%lf\n", matrix->values[mat2vec(c, prow, i)]);
+				PrintMatrix(matrix);
 			#endif
 			
 			/* Reduce pivot line (divide line by pivot) - Use OpenMP here */
@@ -168,17 +160,15 @@ int main(int argc, char *argv[]) {
 
 			/* Send pivot and their line (indexed by rank) to each slaves */
 			#ifdef DEBUG
-				// fprintf(logs[rank], "[debug #0]: Broadcasting: {");
-				// for(int k = 0; k < cols; k++) {
-				// 	fprintf(logs[rank], "%lf, ", matrix->values[mat2vec(c, pline, k)]);
-				// } 
-				// fprintf(logs[rank], "\b\b}\n");
+				fprintf(logs[rank], "[debug #0]: Broadcasting: {");
+				for(int k = 0; k < cols; k++)
+					fprintf(logs[rank], "%lf, ", matrix->values[mat2vec(c, prow, k)]);
+				fprintf(logs[rank], "\b\b}\n");
 			#endif
 
-			// MPI_Bcast(matrix->values[pline], cols, MPI_DOUBLE, rank, MPI_COMM_WORLD); // FIXME
+			// MPI_Bcast(matrix->values[prow], cols, MPI_DOUBLE, rank, MPI_COMM_WORLD); // FIXME
 
 			/* Swap pivot line */
-
 			SwapLines(matrix, prow, i);
 			prow = i;
 
@@ -187,11 +177,6 @@ int main(int argc, char *argv[]) {
 			// MPI_Scatter(matrix->values, chunkSize * c, MPI_DOUBLE, currentRow, chunkSize * c, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		// Slaves
 		} else {
-
-			// CHECKME
-			// Each iteration discards one process
-			if(rank < nproc - prevPivotLine) 
-				break;
 
 			/* Receive message (pivot and rank lines) */
 			// MPI_Bcast(pivotRow, c, MPI_DOUBLE, 0, MPI_COMM_WORLD);
@@ -217,6 +202,7 @@ int main(int argc, char *argv[]) {
 		// pivotRow = matrix->values[prow]; // FIXME
 
 		// For each row in the matrix:
+		// #pragma omp parallel for
 		for(j = 0; j < r; j++){
 
 			#ifdef DEBUG
@@ -233,25 +219,15 @@ int main(int argc, char *argv[]) {
 			// calculating the scalar value of line product
 			scalar = -matrix->values[mat2vec(c, j, pcol)];
 			pivotRow = matrix->values + (prow * c);
-			
 
-			//FIXME
 			// Creating a auxiliar vector to store the prod. value
 			memcpy(backupRow, pivotRow, sizeof(double) * c);
 
-			#ifdef DEBUG
-				// fprintf(stderr, "[debug] scalar: %lf\n", scalar);
-				// for (int k = 0; k < c; k++){
-				// 	fprintf(stderr, "[debug] pivotrow: %lf\n", matrix->values[prow*c+k]);
-				// }for (int k = 0; k < c; k++){
-				// 	fprintf(stderr, "[debug] backuprow: %lf\n", backupRow[k]);
-				// }
-			#endif
 			// Multipying row by scalar
 			_MultiplyLineByScalar(backupRow, c, scalar);
 
 			// Sum of currently selected row and multiplied row
-			currentRow = matrix->values + (c*j); //FIXME
+			currentRow = matrix->values + (c*j);
 
 			_AddLines(currentRow, backupRow, c);
 		}
@@ -267,7 +243,7 @@ int main(int argc, char *argv[]) {
 
 		/* Master can debug print */
 		if(rank == 0) {
-
+			PrintMatrix(matrix);
 		}
 	}
 
@@ -276,8 +252,8 @@ int main(int argc, char *argv[]) {
 	fclose(logs[rank]);
 #endif
 
-	if(backupRow) free(backupRow);
 	MPI_Finalize();
+	free(backupRow);
 	free(recv);
 	//free(pivotline);
 
