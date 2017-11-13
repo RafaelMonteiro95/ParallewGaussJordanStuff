@@ -39,10 +39,11 @@ OBJ += $(foreach file, $(SRCPP), $(file:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o))
 # DEL_OBJ=$(wildcard $(OBJDIR)/*.o)
 # DEL_OBJ=$(filter-out %.o, $(OBJC))
 
+# NPROC:=2
+# NTHREADS:=2
 CC:=mpicc
 CFLAGS:=-O3 -I./$(INCDIR) -fopenmp
-NPROC:=3
-MPIFLAGS:=-np $(NPROC)
+# MPIFLAGS:=-np $(NPROC)
 
 USER_LIBS:=-lpthread
 DEFAULT_LIBS:=-lm
@@ -71,6 +72,10 @@ main: $(OBJ)
 	@echo Linking object files
 	@$(CC) -o $(BLDDIR)/$(NAME) $^ $(CFLAGS) $(LIBS)
 
+generate_test_case:
+	python mat.py 1000 1000
+	python mat.py 5000 5000
+	python mat.py 10000 10000
 
 .PHONY: run
 # Run directives
@@ -79,6 +84,152 @@ run:
 
 mpi_run:
 	$(DEBUGGER) mpiexec $(MPIFLAGS) ./$(BLDDIR)/$(NAME) $(RUN_ARGS)
+
+run_tests: test1nodes1threads1000 test1nodes1threads5000 test1nodes1threads10000 test1nodes2threads1000 test1nodes2threads5000 test1nodes2threads10000 test1nodes4threads1000 test1nodes4threads5000 test1nodes4threads10000 test1nodes8threads1000 test1nodes8threads5000 test1nodes8threads10000 test2nodes1threads1000 test2nodes1threads5000 test2nodes1threads10000 test2nodes2threads1000 test2nodes2threads5000 test2nodes2threads10000 test2nodes4threads1000 test2nodes4threads5000 test2nodes4threads10000 test2nodes8threads1000 test2nodes8threads5000 test2nodes8threads10000 test4nodes1threads1000 test4nodes1threads5000 test4nodes1threads10000 test4nodes2threads1000 test4nodes2threads5000 test4nodes2threads10000 test4nodes4threads1000 test4nodes4threads5000 test4nodes4threads10000 test4nodes8threads1000 test4nodes8threads5000 test4nodes8threads10000 test8nodes1threads1000 test8nodes1threads5000 test8nodes1threads10000 test8nodes2threads1000 test8nodes2threads5000 test8nodes2threads10000 test8nodes4threads1000 test8nodes4threads5000 test8nodes4threads10000 test8nodes8threads1000 test8nodes8threads5000 test8nodes8threads10000
+
+test1nodes1threads1000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 1 ./$(BLDDIR)/$(NAME) matriz1000.txt vetor1000.txt 1 > test1nodes1threads1000-resultado.txt
+
+test1nodes1threads5000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 1 ./$(BLDDIR)/$(NAME) matriz5000.txt vetor5000.txt 1 > test1nodes1threads5000-resultado.txt
+
+test1nodes1threads10000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 1 ./$(BLDDIR)/$(NAME) matriz10000.txt vetor10000.txt 1 > test1nodes1threads10000-resultado.txt
+
+test1nodes2threads1000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 1 ./$(BLDDIR)/$(NAME) matriz1000.txt vetor1000.txt 2 > test1nodes2threads1000-resultado.txt
+
+test1nodes2threads5000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 1 ./$(BLDDIR)/$(NAME) matriz5000.txt vetor5000.txt 2 > test1nodes2threads5000-resultado.txt
+
+test1nodes2threads10000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 1 ./$(BLDDIR)/$(NAME) matriz10000.txt vetor10000.txt 2 > test1nodes2threads10000-resultado.txt
+
+test1nodes4threads1000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 1 ./$(BLDDIR)/$(NAME) matriz1000.txt vetor1000.txt 4 > test1nodes4threads1000-resultado.txt
+
+test1nodes4threads5000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 1 ./$(BLDDIR)/$(NAME) matriz5000.txt vetor5000.txt 4 > test1nodes4threads5000-resultado.txt
+
+test1nodes4threads10000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 1 ./$(BLDDIR)/$(NAME) matriz10000.txt vetor10000.txt 4 > test1nodes4threads10000-resultado.txt
+
+test1nodes8threads1000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 1 ./$(BLDDIR)/$(NAME) matriz1000.txt vetor1000.txt 8 > test1nodes8threads1000-resultado.txt
+
+test1nodes8threads5000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 1 ./$(BLDDIR)/$(NAME) matriz5000.txt vetor5000.txt 8 > test1nodes8threads5000-resultado.txt
+
+test1nodes8threads10000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 1 ./$(BLDDIR)/$(NAME) matriz10000.txt vetor10000.txt 8 > test1nodes8threads10000-resultado.txt
+
+test2nodes1threads1000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 2 ./$(BLDDIR)/$(NAME) matriz1000.txt vetor1000.txt 1 > test2nodes1threads1000-resultado.txt
+
+test2nodes1threads5000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 2 ./$(BLDDIR)/$(NAME) matriz5000.txt vetor5000.txt 1 > test2nodes1threads5000-resultado.txt
+
+test2nodes1threads10000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 2 ./$(BLDDIR)/$(NAME) matriz10000.txt vetor10000.txt 1 > test2nodes1threads10000-resultado.txt
+
+test2nodes2threads1000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 2 ./$(BLDDIR)/$(NAME) matriz1000.txt vetor1000.txt 2 > test2nodes2threads1000-resultado.txt
+
+test2nodes2threads5000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 2 ./$(BLDDIR)/$(NAME) matriz5000.txt vetor5000.txt 2 > test2nodes2threads5000-resultado.txt
+
+test2nodes2threads10000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 2 ./$(BLDDIR)/$(NAME) matriz10000.txt vetor10000.txt 2 > test2nodes2threads10000-resultado.txt
+
+test2nodes4threads1000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 2 ./$(BLDDIR)/$(NAME) matriz1000.txt vetor1000.txt 4 > test2nodes4threads1000-resultado.txt
+
+test2nodes4threads5000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 2 ./$(BLDDIR)/$(NAME) matriz5000.txt vetor5000.txt 4 > test2nodes4threads5000-resultado.txt
+
+test2nodes4threads10000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 2 ./$(BLDDIR)/$(NAME) matriz10000.txt vetor10000.txt 4 > test2nodes4threads10000-resultado.txt
+
+test2nodes8threads1000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 2 ./$(BLDDIR)/$(NAME) matriz1000.txt vetor1000.txt 8 > test2nodes8threads1000-resultado.txt
+
+test2nodes8threads5000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 2 ./$(BLDDIR)/$(NAME) matriz5000.txt vetor5000.txt 8 > test2nodes8threads5000-resultado.txt
+
+test2nodes8threads10000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 2 ./$(BLDDIR)/$(NAME) matriz10000.txt vetor10000.txt 8 > test2nodes8threads10000-resultado.txt
+
+test4nodes1threads1000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 4 ./$(BLDDIR)/$(NAME) matriz1000.txt vetor1000.txt 1 > test4nodes1threads1000-resultado.txt
+
+test4nodes1threads5000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 4 ./$(BLDDIR)/$(NAME) matriz5000.txt vetor5000.txt 1 > test4nodes1threads5000-resultado.txt
+
+test4nodes1threads10000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 4 ./$(BLDDIR)/$(NAME) matriz10000.txt vetor10000.txt 1 > test4nodes1threads10000-resultado.txt
+
+test4nodes2threads1000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 4 ./$(BLDDIR)/$(NAME) matriz1000.txt vetor1000.txt 2 > test4nodes2threads1000-resultado.txt
+
+test4nodes2threads5000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 4 ./$(BLDDIR)/$(NAME) matriz5000.txt vetor5000.txt 2 > test4nodes2threads5000-resultado.txt
+
+test4nodes2threads10000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 4 ./$(BLDDIR)/$(NAME) matriz10000.txt vetor10000.txt 2 > test4nodes2threads10000-resultado.txt
+
+test4nodes4threads1000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 4 ./$(BLDDIR)/$(NAME) matriz1000.txt vetor1000.txt 4 > test4nodes4threads1000-resultado.txt
+
+test4nodes4threads5000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 4 ./$(BLDDIR)/$(NAME) matriz5000.txt vetor5000.txt 4 > test4nodes4threads5000-resultado.txt
+
+test4nodes4threads10000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 4 ./$(BLDDIR)/$(NAME) matriz10000.txt vetor10000.txt 4 > test4nodes4threads10000-resultado.txt
+
+test4nodes8threads1000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 4 ./$(BLDDIR)/$(NAME) matriz1000.txt vetor1000.txt 8 > test4nodes8threads1000-resultado.txt
+
+test4nodes8threads5000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 4 ./$(BLDDIR)/$(NAME) matriz5000.txt vetor5000.txt 8 > test4nodes8threads5000-resultado.txt
+
+test4nodes8threads10000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 4 ./$(BLDDIR)/$(NAME) matriz10000.txt vetor10000.txt 8 > test4nodes8threads10000-resultado.txt
+
+test8nodes1threads1000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 8 ./$(BLDDIR)/$(NAME) matriz1000.txt vetor1000.txt 1 > test8nodes1threads1000-resultado.txt
+
+test8nodes1threads5000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 8 ./$(BLDDIR)/$(NAME) matriz5000.txt vetor5000.txt 1 > test8nodes1threads5000-resultado.txt
+
+test8nodes1threads10000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 8 ./$(BLDDIR)/$(NAME) matriz10000.txt vetor10000.txt 1 > test8nodes1threads10000-resultado.txt
+
+test8nodes2threads1000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 8 ./$(BLDDIR)/$(NAME) matriz1000.txt vetor1000.txt 2 > test8nodes2threads1000-resultado.txt
+
+test8nodes2threads5000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 8 ./$(BLDDIR)/$(NAME) matriz5000.txt vetor5000.txt 2 > test8nodes2threads5000-resultado.txt
+
+test8nodes2threads10000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 8 ./$(BLDDIR)/$(NAME) matriz10000.txt vetor10000.txt 2 > test8nodes2threads10000-resultado.txt
+
+test8nodes4threads1000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 8 ./$(BLDDIR)/$(NAME) matriz1000.txt vetor1000.txt 4 > test8nodes4threads1000-resultado.txt
+
+test8nodes4threads5000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 8 ./$(BLDDIR)/$(NAME) matriz5000.txt vetor5000.txt 4 > test8nodes4threads5000-resultado.txt
+
+test8nodes4threads10000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 8 ./$(BLDDIR)/$(NAME) matriz10000.txt vetor10000.txt 4 > test8nodes4threads10000-resultado.txt
+
+test8nodes8threads1000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 8 ./$(BLDDIR)/$(NAME) matriz1000.txt vetor1000.txt 8 > test8nodes8threads1000-resultado.txt
+
+test8nodes8threads5000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 8 ./$(BLDDIR)/$(NAME) matriz5000.txt vetor5000.txt 8 > test8nodes8threads5000-resultado.txt
+
+test8nodes8threads10000:
+	$(DEBUGGER) mpiexec --hostfile hosts -np 8 ./$(BLDDIR)/$(NAME) matriz10000.txt vetor10000.txt 8 > test8nodes8threads10000-resultado.txt
 
 # Utility directives
 .PHONY: clean
