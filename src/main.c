@@ -41,8 +41,9 @@ int main(int argc, char *argv[]) {
 	double *sendVec;
 	double *pivotline;
 	double *pivotRow = NULL;
-	double *currentRow = NULL;
 	double *backupRow = NULL;
+	double *currentRow = NULL; 
+	double *chunk = NULL;
 
 	// double* backupRow = NULL;
 
@@ -111,7 +112,7 @@ int main(int argc, char *argv[]) {
 	
 		//sending matrix size
 		c++;
-		// MPI_Bcast(&r, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&r, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
 		// Calculates chunk size
 		chunkSize = (r / nproc) + 1; 
@@ -121,10 +122,12 @@ int main(int argc, char *argv[]) {
 
 
 		backupRow = malloc(sizeof(double) * c);
+
 	} else {
 
-		// MPI_Bcast(&r, 1, MPI_INT, 0, MPI_COMM_WORLD);
+		MPI_Bcast(&r, 1, MPI_INT, 0, MPI_COMM_WORLD);
 		c = r+1;
+
 	}
 
 	// For each row in the matrix
@@ -132,9 +135,6 @@ int main(int argc, char *argv[]) {
 		
 		/* Master only */
 		if(rank == 0) {
-
-	
-			int size = cols*matrix->rows;
 
 			#ifdef DEBUG
 				// printf("Searching pivot in col: %d\n", i);
@@ -175,16 +175,15 @@ int main(int argc, char *argv[]) {
 				// fprintf(logs[rank], "\b\b}\n");
 			#endif
 
-			// MPI_Bcast(matrix->values[pline], cols, MPI_DOUBLE, rank, MPI_COMM_WORLD); // FIXME
-
 			/* Swap pivot line */
 
 			SwapLines(matrix, prow, i);
 			prow = i;
 
-			// /* Sends pivot and chunks to each slaves */
-			// MPI_Bcast(pivotRow, c, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-			// MPI_Scatter(matrix->values, chunkSize * c, MPI_DOUBLE, currentRow, chunkSize * c, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+			pivotRow = matrix->values + (prow * c);
+
+			chunk = matrix->values;
+
 		// Slaves
 		} else {
 
@@ -192,11 +191,10 @@ int main(int argc, char *argv[]) {
 			// Each iteration discards one process
 			if(rank < nproc - prevPivotLine) 
 				break;
-
-			/* Receive message (pivot and rank lines) */
-			// MPI_Bcast(pivotRow, c, MPI_DOUBLE, 0, MPI_COMM_WORLD);
-			// MPI_Scatter(matrix->values, chunkSize * c, MPI_DOUBLE, currentRow, chunkSize * c, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		}
+
+		// MPI_Bcast(pivotRow, c, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+		// MPI_Scatter(matrix->values, chunkSize * c, MPI_DOUBLE, currentRow, chunkSize * c, MPI_DOUBLE, 0, MPI_COMM_WORLD);
 		
 		/* Sum each line (indexed by rank) with the pivot line multiplied by a 
 		scalar. The scalar shall be the oposite of the element in the same 
@@ -210,32 +208,33 @@ int main(int argc, char *argv[]) {
 			Use OpenMP here.
 		*/
 
-		/* SEQUENTIAL VERSION OF CODE*/
-
-		// Alocating memory for processing each row
-		// Selecting the pivot row
-		// pivotRow = matrix->values[prow]; // FIXME
+		// Searching for pcol
+		int k;
+		for(k = 0; k < c; k++){
+			if(pivotRow[k] == 1.0){
+				pcol = k;
+				break;
+			}
+		}
 
 		// For each row in the matrix:
-		for(j = 0; j < r; j++){
+		for(j = 0; j < chunkSize - 1; j++){
 
 			#ifdef DEBUG
 				// printf("Swapping lines %d and %d\n", prow, i);	
 				// PrintMatrix(matrix);
 			#endif
+
 			// I don't need to process the pivot row
-			if (j == prow) continue;
+			if (j == prow) continue; //FIXME
 
 			/* we have to multiply the pivot row by a value 
 			that would zero the value in this current row that is
 			below or above the current pivot.*/
 
 			// calculating the scalar value of line product
-			scalar = -matrix->values[mat2vec(c, j, pcol)];
-			pivotRow = matrix->values + (prow * c);
+			scalar = -chunk[(j*c)+pcol];
 			
-
-			//FIXME
 			// Creating a auxiliar vector to store the prod. value
 			memcpy(backupRow, pivotRow, sizeof(double) * c);
 
@@ -247,39 +246,24 @@ int main(int argc, char *argv[]) {
 				// 	fprintf(stderr, "[debug] backuprow: %lf\n", backupRow[k]);
 				// }
 			#endif
+
 			// Multipying row by scalar
 			_MultiplyLineByScalar(backupRow, c, scalar);
 
 			// Sum of currently selected row and multiplied row
-			currentRow = matrix->values + (c*j); //FIXME
+			currentRow = chunk + (c*j); //FIXME
 
 			_AddLines(currentRow, backupRow, c);
 		}
-		
-		/* END SEQUENTIAL CODE */
-
-		/* PARALLEL CODE*/
-
-
-		/* END PARALLEL CODE */
 
 		/* Send result back to master */
-
-		/* Master can debug print */
-		if(rank == 0) {
-
-		}
+		// PrintMatrix(matrix);	
 	}
-
-#ifdef DEBUG
-	free(tmp);
-	fclose(logs[rank]);
-#endif
+	
 
 	if(backupRow) free(backupRow);
 	MPI_Finalize();
 	free(recv);
-	//free(pivotline);
 
 	return 0;
 }
