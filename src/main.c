@@ -32,14 +32,11 @@ int main(int argc, char *argv[]) {
 	int r, c;
 	int nproc, rank;
 	int pcol, prow;
-	int chunkSize;
-
+	int chunkSize, lastChunkSize;
 	int cols, prevPivotLine;
 	
 	double scalar;
-	double *recv = NULL;
-	// double *sendVec;
-	// double *pivotline;
+	double *chunk;
 	double *pivotRow = NULL;
 	double *currentRow = NULL;
 	double *backupRow = NULL;
@@ -53,6 +50,7 @@ int main(int argc, char *argv[]) {
 	MPI_Init(&argc, &argv);
 	MPI_Comm_size(MPI_COMM_WORLD, &nproc);
 	MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+	int displs[nproc], sendcounts[nproc];
 
 #ifdef DEBUG
 
@@ -106,24 +104,90 @@ int main(int argc, char *argv[]) {
 			fscanf(vectorFp, "%lf", &(matrix->values[mat2vec(matrix->cols, i, c)]));
 		}
 	
-		//sending matrix size
+		// Sending matrix size
 		c++;
 		MPI_Bcast(&r, 1, MPI_INT, 0, MPI_COMM_WORLD);
 
 		// Calculates chunk size
 		backupRow = (double *) malloc(sizeof(double) * c);
-		chunkSize = (r / nproc) + 1; 
+		chunkSize = r/nproc; // Integer division
+		lastChunkSize = r - chunkSize*(nproc-1); // If not divisible, last chunk is smaller
+		chunk = (double *) malloc(sizeof(double)*chunkSize);
+
 		#ifdef DEBUG
 			fprintf(stderr, "[debug] chunkSize: %d\n", chunkSize);
 		#endif
 
+		PrintMatrix(matrix);
+
 		fclose(matrixFp);
 		fclose(vectorFp);
 
+		// Scatter chunks
+		int sum = 0;
+		for(int i = 0; i < nproc-1; i++){
+			sendcounts[i] = chunkSize*c;
+			displs[i] = sum;
+			sum += sendcounts[i];
+			fprintf(stderr, "[debug#0] displs[%d]: %d\n", i, displs[i]);
+		}
+		sendcounts[nproc-1] = lastChunkSize*c;
+		displs[nproc-1] = sum;
+		fprintf(stderr, "[debug#%d] displs[%d]: %d\n", rank, nproc-1, displs[nproc-1]);
+
+		#ifdef DEBUG
+			for (int i = 0; i < nproc; i++){
+				fprintf(stderr, "[debug#0] sendcounts[%d]: %d\n", i, sendcounts[i]);
+			}
+		#endif
+
+		MPI_Scatterv(matrix->values, sendcounts, displs,
+            MPI_DOUBLE, chunk, chunkSize,
+            MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
 	} else {
+
 		MPI_Bcast(&r, 1, MPI_INT, 0, MPI_COMM_WORLD);
-		c = r+1;
+		c = r+1; // Number of cols is always rows+1
+	
+		// Calculates chunk size
+		backupRow = (double *) malloc(sizeof(double) * c);
+		chunkSize = r/nproc; // Integer division
+		lastChunkSize = r - chunkSize*(nproc-1); // If not divisible, last chunk is smaller
+		chunk = (double *) malloc(sizeof(double)*chunkSize);
+				
+		// Scatter chunks
+		int sum = 0;
+		for(int i = 0; i < nproc-1; i++){
+			sendcounts[i] = chunkSize*c;
+			displs[i] = sum;
+			sum += sendcounts[i];
+			fprintf(logs[rank], "[debug#%d] displs[%d]: %d\n", rank, i, displs[i]);
+		}
+		sendcounts[nproc-1] = lastChunkSize*c;
+		displs[nproc-1] = sum;
+		fprintf(logs[rank], "[debug#%d] displs[%d]: %d\n", rank, nproc-1, displs[nproc-1]);
+
+		fprintf(logs[rank], "[debug#%d] allocating %d elements for chunk\n", rank, sendcounts[rank]);
+		chunk = (double *) malloc(sizeof(double)*sendcounts[rank]);
+
+		MPI_Scatterv(NULL, sendcounts, displs,
+            MPI_DOUBLE, chunk, sendcounts[rank],
+            MPI_DOUBLE, 0, MPI_COMM_WORLD);
+
+		fprintf(logs[rank], "[debug#%d] sendcounts[%d]: %d\n", rank, rank, sendcounts[rank]);
+		fprintf(logs[rank], "[debug#%d] receiving chunk.\n", rank);
+		fprintf(logs[rank], "[debug#%d] chunk: {", rank);
+		for(int i = 0; i < sendcounts[rank];){
+			fprintf(logs[rank], "%lf, ", chunk[i]);
+			if(++i%c == 0) fprintf(logs[rank], "\n");
+		} fprintf(logs[rank], "\b\b}\n");
 	}
+	
+	free(backupRow);
+	MPI_Finalize();
+
+	return 0;
 
 	// For each row in the matrix
 	for(i = 0; i < r; i++){
@@ -209,6 +273,7 @@ int main(int argc, char *argv[]) {
 				// printf("Swapping lines %d and %d\n", prow, i);	
 				// PrintMatrix(matrix);
 			#endif
+
 			// I don't need to process the pivot row
 			if (j == prow) continue;
 
@@ -254,8 +319,6 @@ int main(int argc, char *argv[]) {
 
 	MPI_Finalize();
 	free(backupRow);
-	free(recv);
-	//free(pivotline);
 
 	return 0;
 }
