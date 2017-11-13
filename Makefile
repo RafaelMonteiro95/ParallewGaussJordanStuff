@@ -20,7 +20,8 @@ endif
 
 
 DEBUGGER=
-DBGFLAGS=-v --leak-check=full --show-leak-kinds=all --read-var-info=yes --track-origins=yes
+#DBGFLAGS=-v --leak-check=full --show-leak-kinds=all --read-var-info=yes --track-origins=yes
+DBGFLAGS=-v --read-var-info=yes --track-origins=yes
 
 # Search for source files
 SRC=$(wildcard $(SRCDIR)/*.c) 
@@ -40,7 +41,7 @@ OBJ += $(foreach file, $(SRCPP), $(file:$(SRCDIR)/%.cpp=$(OBJDIR)/%.o))
 
 CC:=mpicc
 CFLAGS:=-O3 -I./$(INCDIR) -fopenmp
-NPROC:=1	
+NPROC:=3
 MPIFLAGS:=-np $(NPROC)
 
 USER_LIBS:=-lpthread
@@ -77,7 +78,7 @@ run:
 	$(DEBUGGER) ./$(BLDDIR)/$(NAME) $(RUN_ARGS)
 
 mpi_run:
-	$(DEBUGGER) mpiexec -np $(NPROC) $(MPIFLAGS) ./$(BLDDIR)/$(NAME) $(RUN_ARGS)
+	$(DEBUGGER) mpiexec $(MPIFLAGS) ./$(BLDDIR)/$(NAME) $(RUN_ARGS)
 
 # Utility directives
 .PHONY: clean
@@ -138,8 +139,6 @@ readme: checkname
 	@echo "" >> $(NAME)/README.md
 	@echo "" >> $(NAME)/README.md
 	@echo "Set \`debug=1\` to compile/run in debug mode  " >> $(NAME)/README.md
-	@echo "Set \`IN=filename\` to feed a file to the program  " >> $(NAME)/README.md
-	@echo "Set \`OUT=filename\` to write program output to designed file  " >> $(NAME)/README.md
 	@echo "Use \`CFLAGS+=flags\` to add compiler flags  " >> $(NAME)/README.md
 	@echo "Set \`CC=compiler\` to change compiler  " >> $(NAME)/README.md
 	@echo "Set \`NAME=name\` to set project name  " >> $(NAME)/README.md
@@ -153,6 +152,7 @@ checkdirs:
 	if [ ! -d $(LIBDIR)/ ]; then mkdir -p $(LIBDIR)/; fi
 	if [ ! -d $(SRCDIR)/ ]; then mkdir -p $(SRCDIR)/; fi
 	if [ ! -d $(OBJDIR)/ ]; then mkdir -p $(OBJDIR)/; fi
+	if [ ! -d logs/ 	 ]; then mkdir -p logs/		; fi
 
 # Check if project has a name
 checkname: 
